@@ -3,9 +3,12 @@
   "version": "0.0.1",
   "description": "",
   "scripts": {
-    "dev": "node app"
+    "dev": "node app",
+    "start": "pm2 start ./app.js --name webrtc-service",
+    "stop": "pm2 del webrtc-service"
   },
   "dependencies": {
+    "pm2": "^5.3.0",
     "simple-peer": "^9.11.1",
     "socket.io-client": "^4.6.0",
     "uuid": "^9.0.0"

@@ -3,8 +3,8 @@ const { Server } = require("socket.io");
 const http = require("http");
 const express = require("express");
 const fs = require('fs')
-const { createOrJoinRoom, Member } = require("./room");
-const {serializeMember} = require('./utils')
+const { Rooms, createOrJoinRoom, Member } = require("./room");
+const { serializeMember } = require('./utils')
 
 const app = express();
 // var options = {
@@ -13,13 +13,13 @@ const app = express();
 // };
 // var server = https.createServer(options, app).listen(9876);
 var server = http.createServer(app).listen(8088);
-const io = new Server(server, { cors: true});
+const io = new Server(server, { cors: true });
 
 io.on("connect", async (socket) => {
   socket.on("join-room", async (newMember) => {
     const member = new Member(newMember.id, newMember.roomId, newMember.hasCameraStream, newMember.hasAudioStream, newMember.localStream, socket)
     const room = await createOrJoinRoom(member);
-    
+
     console.log(`用户(${member.id})加入房间(${room.id})`);
 
     for (let id in room.memberList) {
@@ -45,7 +45,7 @@ io.on("connect", async (socket) => {
 
     socket.on("disconnect", () => {
       console.log(`用户(${member.id})从房间(${room.id})断开连接`);
-      socket.broadcast.emit("remove-peer", serializeMember(member) );
+      socket.broadcast.emit("remove-peer", serializeMember(member));
       room.exit(member.id);
     });
 
@@ -64,3 +64,27 @@ io.on("connect", async (socket) => {
     });
   });
 });
+
+app.get('/getRooms', (req, res) => {
+  const rooms = []
+  for (const roomId in Rooms.roomList) {
+    const rawRoom = Rooms.roomList[roomId]
+    const room = {
+      id: rawRoom.id,
+      members: []
+    }
+    for (const memberId in rawRoom.memberList) {
+      const rawMember = rawRoom.memberList[memberId]
+      
+      const member = {
+        id: rawMember.id,
+        roomId: rawMember.roomId,
+        hasCameraStream: rawMember.hasCameraStream,
+        hasAudioStream: rawMember.hasAudioStream,
+      }
+      room.members.push(member)
+    }
+    rooms.push(room)
+  }
+  res.send({ data: rooms, success: true })
+})
