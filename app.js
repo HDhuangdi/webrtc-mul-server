@@ -1,18 +1,18 @@
 const { Server } = require("socket.io");
-// const https = require("https");
-const http = require("http");
+const https = require("https");
+// const http = require("http");
 const express = require("express");
 const fs = require('fs')
 const { Rooms, createOrJoinRoom, Member } = require("./room");
 const { serializeMember } = require('./utils')
 
 const app = express();
-// var options = {
-//   key: fs.readFileSync('/opt/pem/hzwateritzx.com.key'),
-//   cert: fs.readFileSync('/opt/pem/hzwateritzx.com_bundle.crt')
-// };
-// var server = https.createServer(options, app).listen(9876);
-var server = http.createServer(app).listen(8088);
+var options = {
+  key: fs.readFileSync('/opt/pem/hzcjtz.com.key'),
+  cert: fs.readFileSync('/opt/pem/hzcjtz.com.crt')
+};
+var server = https.createServer(options, app).listen(9876);
+// var server = http.createServer(app).listen(8088);
 const io = new Server(server, { cors: true });
 
 io.on("connect", async (socket) => {
@@ -62,6 +62,17 @@ io.on("connect", async (socket) => {
       serializedSwitchedMember.hasAudioStream = switchedMember.hasAudioStream
       socket.broadcast.emit("stream-switched", serializeMember(serializedSwitchedMember));
     });
+
+    socket.on("no-stream-join", joinedMember => {
+      console.log(`无视频流用户(${joinedMember.id})向房间(${room.id})发送no-stream-joined事件`);
+      socket.broadcast.emit("no-stream-joined", serializeMember(joinedMember));
+    })
+
+    socket.on('init-send-done', sendMember => {
+      console.log(`用户(${member.id})向用户(${sendMember.id})发送init-send-done事件`);
+      const serializedSendMember = room.getMember(sendMember.id)
+      serializedSendMember.socket.emit('init-send-done')
+    })
   });
 });
 
